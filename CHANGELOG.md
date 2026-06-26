@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Config-flow description no longer contains angle-bracket text that hassfest
+  rejected as HTML.
+
+### Changed
+- CI: HACS validation ignores the `brands` check (only needed for HACS-default
+  listing) and the repo carries discovery topics.
+
 ## [3.0.0] - 2026-06-26
 
 Single, self-contained integration with the BLE library vendored in.

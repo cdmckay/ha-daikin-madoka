@@ -22,6 +22,10 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # `brands` requires the domain to be registered in home-assistant/brands,
+          # which only matters for HACS-default listing. Ignore it until/unless we
+          # submit there.
+          ignore: brands
 
   tests:
     name: Lint & test
