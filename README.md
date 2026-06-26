@@ -28,6 +28,18 @@ This version follows Home Assistant's Bluetooth best practices:
   so the climate and sensor entities share one update cycle.
 - The manifest declares `dependencies: ["bluetooth_adapters"]`.
 
+## Roadmap
+
+Not in this version, planned next:
+
+- **Clean-filter entities** — a `binary_sensor` (`device_class: problem`) for the
+  BRC1H's "filter needs cleaning" indicator, and a `button` to reset the
+  clean-filter timer. The protocol support exists in the library's history
+  (`CleanFilterIndicator` / `ResetCleanFilterTimer`); it just needs entities.
+- **Bluetooth auto-discovery** — a `bluetooth` manifest matcher + a discovery
+  config-flow step, so the BRC1H is offered automatically instead of entering
+  its MAC by hand.
+
 ## Installation (HACS)
 
 Add this repository as a custom repository (category: *Integration*), install
