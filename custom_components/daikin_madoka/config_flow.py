@@ -1,13 +1,13 @@
 """Config flow for the Daikin Madoka integration."""
+
 from __future__ import annotations
 
 import re
 
+import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.const import CONF_DEVICES
-import homeassistant.helpers.config_validation as cv
 
 from .const import DOMAIN, TITLE, UNIQUE_ID
 

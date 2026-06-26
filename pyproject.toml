@@ -3,12 +3,10 @@ target-version = "py313"
 line-length = 88
 
 [tool.ruff.lint]
-# Keep the vendored protocol library (madoka/) out of strict linting — it is
-# imported third-party code we only minimally patch.
 select = ["E", "F", "W", "I"]
-
-[tool.ruff.lint.per-file-ignores]
-"custom_components/daikin_madoka/madoka/**" = ["E", "F", "W", "I"]
+# `ruff format` owns code line length; the remaining long lines are protocol
+# log strings and docstrings where wrapping hurts readability.
+ignore = ["E501"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

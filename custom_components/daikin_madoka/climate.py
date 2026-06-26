@@ -1,4 +1,5 @@
 """Support for the Daikin Madoka HVAC."""
+
 from __future__ import annotations
 
 import logging
@@ -75,8 +76,7 @@ DAIKIN_TO_HA_CURRENT_HVAC_MODE = {
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Daikin Madoka climate entities based on a config entry."""
     async_add_entities(
-        DaikinMadokaClimate(coordinator)
-        for coordinator in entry.runtime_data.values()
+        DaikinMadokaClimate(coordinator) for coordinator in entry.runtime_data.values()
     )
 
 

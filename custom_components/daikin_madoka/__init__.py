@@ -1,4 +1,5 @@
 """The Daikin Madoka (BRC1H) integration."""
+
 from __future__ import annotations
 
 import asyncio
@@ -10,7 +11,7 @@ from homeassistant.const import CONF_DEVICES, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import CONNECT_TIMEOUT, DOMAIN
+from .const import CONNECT_TIMEOUT
 from .coordinator import MadokaDataUpdateCoordinator
 from .madoka import ConnectionStatus, Controller
 
@@ -69,9 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MadokaConfigEntry) -> bo
                 await asyncio.wait_for(controller.start(), timeout=CONNECT_TIMEOUT)
             except (asyncio.TimeoutError, asyncio.CancelledError) as err:
                 await _safe_stop(controller)
-                raise ConfigEntryNotReady(
-                    f"Timed out connecting to {address}"
-                ) from err
+                raise ConfigEntryNotReady(f"Timed out connecting to {address}") from err
 
             if (
                 controller.connection.connection_status

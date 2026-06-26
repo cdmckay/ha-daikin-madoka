@@ -5,6 +5,7 @@ connection, so the climate and sensor entities share one update cycle instead
 of each opening their own conversation with the device (which used to multiply
 BLE traffic and contention).
 """
+
 from __future__ import annotations
 
 import logging
@@ -60,6 +61,8 @@ class MadokaDataUpdateCoordinator(DataUpdateCoordinator[Controller]):
                 await self.controller.read_info()
             await self.controller.update()
         except (ConnectionAbortedError, ConnectionException) as err:
-            raise UpdateFailed(f"Error communicating with {self.address}: {err}") from err
+            raise UpdateFailed(
+                f"Error communicating with {self.address}: {err}"
+            ) from err
 
         return self.controller

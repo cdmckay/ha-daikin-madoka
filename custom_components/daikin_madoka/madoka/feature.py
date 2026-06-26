@@ -1,34 +1,36 @@
-"""This module implements the base class of the features supported by the device
-"""
+"""This module implements the base class of the features supported by the device"""
 
-from abc import ABC, abstractmethod
-import logging
 import json
-from typing import Dict
-
+import logging
+from abc import ABC, abstractmethod
 from asyncio.exceptions import CancelledError
+from typing import Dict
 
 from .connection import Connection, ConnectionException, ConnectionStatus
 
 logger = logging.getLogger(__name__)
 
+
 class ParseException(Exception):
-     pass
+    pass
+
 
 class NotImplementedException(Exception):
-     pass
+    pass
+
 
 class FeatureStatus(ABC):
     """
     This interface defines the methods used by the Transport to notify the result of the rebuild process.
     """
 
-    """This method must be implemented by subclasses to provide with the list of parameters used by the feature     
+    """This method must be implemented by subclasses to provide with the list of parameters used by the feature
     Returns:
         Dict[int,bytearray]: Dictionary of parameter ids and values
     """
+
     @abstractmethod
-    def get_values(self) -> Dict[int,bytearray]:
+    def get_values(self) -> Dict[int, bytearray]:
         pass
 
     """This method must be implemented by subclasses to provide with the list of parameters used by the feature.
@@ -36,55 +38,58 @@ class FeatureStatus(ABC):
     Returns:
         Dict[int,bytearray]: Dictionary of parameter ids and values
     """
+
     @abstractmethod
-    def set_values(self,values:Dict[int,bytearray]):
+    def set_values(self, values: Dict[int, bytearray]):
         pass
 
     """Parse the provided data into a dictionary of parameter names and values.
 
     Once the parameters have been parsed, they are passed to the feature using the method `set_values`
     Args:
-        data (bytearray): Data to be parsed    
+        data (bytearray): Data to be parsed
     Raises:
         ParseException: There is missing data or there is a data mismatch
     """
-    def parse(self,data:bytearray):
 
-        if len(data)<4:
+    def parse(self, data: bytearray):
+        if len(data) < 4:
             raise ParseException("Not enough bytes to parse")
 
         if data[0] != len(data):
             raise ParseException("Message size and data size mismatchs")
 
-
         # We have already skipped chunk_id(1byte)
         # We process the following data: size(1),cmd_id(3),param_id(1),param_size(1),param_value...
-     
+
         values = {}
         value_size = 0
         i = 4
         while i < len(data):
-            if (i+1) >= len(data):
-                raise ParseException("Not enough data to parse while processing arguments")
-            
-            value_id = data[i]
-            if data[i+1] == 0xff:
-                value_size = 0
-            else: 
-                value_size = data[i+1]
+            if (i + 1) >= len(data):
+                raise ParseException(
+                    "Not enough data to parse while processing arguments"
+                )
 
-            if i+1+value_size >= len(data):
-                raise ParseException("Not enough data to parse while processing arguments")
-            
-            value_bytes = data[i+2:i+2+value_size]
+            value_id = data[i]
+            if data[i + 1] == 0xFF:
+                value_size = 0
+            else:
+                value_size = data[i + 1]
+
+            if i + 1 + value_size >= len(data):
+                raise ParseException(
+                    "Not enough data to parse while processing arguments"
+                )
+
+            value_bytes = data[i + 2 : i + 2 + value_size]
             if len(value_bytes) == 0:
                 value_bytes = bytes([0x00])
             values[value_id] = value_bytes
 
             i += 2 + value_size
-        
-        self.set_values(values)
 
+        self.set_values(values)
 
     """Serialize the status parameters into a bytearray.
 
@@ -93,13 +98,13 @@ class FeatureStatus(ABC):
     Returns:
         bytearray: Data with all the parameter info
     """
-    def serialize(self) -> bytearray:
 
+    def serialize(self) -> bytearray:
         values = self.get_values()
-    
+
         out = bytearray()
 
-        for k,v in values.items():
+        for k, v in values.items():
             out.append(k)
             out.append(len(v))
             out.extend(v)
@@ -107,10 +112,10 @@ class FeatureStatus(ABC):
         # Special case when no parameters are used
 
         if len(out) == 0:
-            out = bytearray([0x00,0x00])
+            out = bytearray([0x00, 0x00])
 
         return out
-            
+
 
 class Feature(ABC):
     """
@@ -118,8 +123,9 @@ class Feature(ABC):
 
     Attributes:
         connection (Connection): Connection to be used to send messages
-        status (FeatureStatus): Status 
+        status (FeatureStatus): Status
     """
+
     def __init__(self, connection: Connection):
         """Inits the feature with the connection.
 
@@ -129,8 +135,7 @@ class Feature(ABC):
         self.connection = connection
         self.status = None
         super().__init__()
-    
-    
+
     @abstractmethod
     def new_status(self) -> FeatureStatus:
         """This method must be implemented by subclasses to return a new instance of the status used by this feature.
@@ -140,7 +145,6 @@ class Feature(ABC):
         """
         pass
 
-    
     @property
     @abstractmethod
     def query_cmd_id(self) -> int:
@@ -150,7 +154,6 @@ class Feature(ABC):
             int: Query status cmd id
         """
         pass
-
 
     @property
     @abstractmethod
@@ -176,38 +179,45 @@ class Feature(ABC):
         """
 
         if self.connection.connection_status == ConnectionStatus.ABORTED:
-                raise ConnectionAbortedError(f"Could not send command: connection is not available")
+            raise ConnectionAbortedError(
+                "Could not send command: connection is not available"
+            )
 
         cmd_id = self.query_cmd_id()
         try:
-            
-           
-             new_status = self.new_status()
-             response = await self.connection.send(cmd_id, new_status.serialize())
-             await response
-             result = response.result()
-             logger.debug(f"{self.__class__.__name__} QUERY response received ({len(result)} bytes)")
-             new_status.parse(result)
-             logger.debug(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default = str)}")
-             self.status = new_status
-             return self.status             
-        except CancelledError as e:
+            new_status = self.new_status()
+            response = await self.connection.send(cmd_id, new_status.serialize())
+            await response
+            result = response.result()
+            logger.debug(
+                f"{self.__class__.__name__} QUERY response received ({len(result)} bytes)"
+            )
+            new_status.parse(result)
+            logger.debug(
+                f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default=str)}"
+            )
+            self.status = new_status
+            return self.status
+        except CancelledError:
             if cmd_id in self.connection.requests:
-                if len(self.connection.requests[cmd_id])>0:
+                if len(self.connection.requests[cmd_id]) > 0:
                     self.connection.requests[cmd_id].pop()
             if self.connection.connection_status == ConnectionStatus.ABORTED:
-                raise ConnectionAbortedError(f"Could not send command: connection is not available")
+                raise ConnectionAbortedError(
+                    "Could not send command: connection is not available"
+                )
             elif self.connection.connection_status == ConnectionStatus.CONNECTING:
                 pass
             else:
-                raise ConnectionException(f"Could not send command: message could not be rebuilt")
+                raise ConnectionException(
+                    "Could not send command: message could not be rebuilt"
+                )
         except ConnectionAbortedError as e:
             raise e
         except Exception as e:
             raise e
-        
 
-    async def update(self,update_status:FeatureStatus) -> FeatureStatus:
+    async def update(self, update_status: FeatureStatus) -> FeatureStatus:
         """This method is used to update the device for this feature.
 
         The method waits until the response is received, parses the result and updates the feature state accordingly.
@@ -227,7 +237,7 @@ class Feature(ABC):
         Handle: 0x0202
           Data: 0007004030200100 <---- FAN_ONLY
 
-        Please note the last byte as it 
+        Please note the last byte as it
 
         Args:
             update_status (FeatureStatus): New status to be set
@@ -240,31 +250,40 @@ class Feature(ABC):
         """
 
         if self.connection.connection_status == ConnectionStatus.ABORTED:
-                raise ConnectionAbortedError(f"Could not send command: connection is not available")
+            raise ConnectionAbortedError(
+                "Could not send command: connection is not available"
+            )
 
         cmd_id = self.update_cmd_id()
         try:
-             response = await self.connection.send(cmd_id, update_status.serialize())
-             await response
-             result = response.result()
-             logger.debug(f"{self.__class__.__name__} UPDATE response received ({len(result)} bytes)")
-             response_status = self.new_status()
-             response_status.parse(result)
-             logger.debug(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(response_status), default = str)}")
-             self.status = update_status
-             return self.status
-        except CancelledError as e:
+            response = await self.connection.send(cmd_id, update_status.serialize())
+            await response
+            result = response.result()
+            logger.debug(
+                f"{self.__class__.__name__} UPDATE response received ({len(result)} bytes)"
+            )
+            response_status = self.new_status()
+            response_status.parse(result)
+            logger.debug(
+                f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(response_status), default=str)}"
+            )
+            self.status = update_status
+            return self.status
+        except CancelledError:
             if cmd_id in self.connection.requests:
-                if len(self.connection.requests[cmd_id])>0:
+                if len(self.connection.requests[cmd_id]) > 0:
                     self.connection.requests[cmd_id].pop()
             if self.connection.connection_status == ConnectionStatus.ABORTED:
-                raise ConnectionAbortedError(f"Could not send command: connection is not available")
+                raise ConnectionAbortedError(
+                    "Could not send command: connection is not available"
+                )
             elif self.connection.connection_status == ConnectionStatus.CONNECTING:
                 pass
             else:
-                raise ConnectionException(f"Could not send command: message could not be rebuilt")
+                raise ConnectionException(
+                    "Could not send command: message could not be rebuilt"
+                )
         except ConnectionAbortedError as e:
             raise e
         except Exception as e:
             raise e
-       

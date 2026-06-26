@@ -1,10 +1,6 @@
-
-
 import asyncio
+import logging
 from asyncio.exceptions import CancelledError
-from asyncio.futures import Future
-import logging                                    
- 
 from enum import Enum
 from typing import Callable, Dict, Optional
 
@@ -12,10 +8,11 @@ from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak_retry_connector import establish_connection
 
+from .consts import NOTIFY_CHAR_UUID, SEND_MAX_TRIES, WRITE_CHAR_UUID
 from .transport import Transport, TransportDelegate
-from .consts import NOTIFY_CHAR_UUID, WRITE_CHAR_UUID, SEND_MAX_TRIES
 
 logger = logging.getLogger(__name__)
+
 
 class ConnectionException(Exception):
     """Exceptions are documented in the same way as classes.
@@ -26,7 +23,8 @@ class ConnectionException(Exception):
     Either form is acceptable, but the two should not be mixed. Choose one
     convention to document the __init__ method and be consistent with it.
 
-     """
+    """
+
     pass
 
 
@@ -36,8 +34,8 @@ class ConnectionStatus(Enum):
     CONNECTED = 2
     ABORTED = 3
 
+
 class Connection(TransportDelegate):
-    
     """Bluetooth client"""
 
     client: BleakClient = None
@@ -56,7 +54,7 @@ class Connection(TransportDelegate):
         current_future (Future): Future of the current command being processed
         connected (ConnectionStatus): Status of the connection
         adapter (str): Bluetooth adapter used for the client
-        
+
     """
 
     def __init__(
@@ -120,17 +118,19 @@ class Connection(TransportDelegate):
         doing so collided with HA's scanner on the same adapter and wedged the
         link with org.bluez InProgress errors.
         """
-        logger.debug(F"Starting connection manager on {self.address}")
+        logger.debug(f"Starting connection manager on {self.address}")
         self.connection_status = ConnectionStatus.CONNECTING
-        while (not self.connection_status == ConnectionStatus.CONNECTED and
-               not self.connection_status == ConnectionStatus.ABORTED):
+        while (
+            not self.connection_status == ConnectionStatus.CONNECTED
+            and not self.connection_status == ConnectionStatus.ABORTED
+        ):
             if self._closing:
                 self.connection_status = ConnectionStatus.DISCONNECTED
                 return
             try:
                 await self._connect()
                 await asyncio.sleep(2.0)
-            except ConnectionAbortedError as e:
+            except ConnectionAbortedError:
                 self.connection_status = ConnectionStatus.ABORTED
             except CancelledError:
                 # Propagate cancellation so asyncio.wait_for() and config-entry
@@ -140,8 +140,9 @@ class Connection(TransportDelegate):
                 # the BLE scan) but not connectable.
                 self.connection_status = ConnectionStatus.DISCONNECTED
                 raise
-            except Exception as e:
+            except Exception:
                 self.connection_status = ConnectionStatus.ABORTED
+
     async def _connect(self):
         # Always prefer the freshest BLEDevice from Home Assistant's central
         # scanner; an address-only fallback cannot be opened by bleak.
@@ -170,38 +171,39 @@ class Connection(TransportDelegate):
                 disconnected_callback=self.on_disconnect,
             )
         except Exception as e:
-            if not "Software caused connection abort" in str(e):
+            if "Software caused connection abort" not in str(e):
                 logger.error(e)
             if not self.reconnect:
                 raise e
             logger.debug("Reconnecting...")
             return
 
-        logger.info(F"Connected to {self.address}")
+        logger.info(f"Connected to {self.address}")
         self.connection_status = ConnectionStatus.CONNECTED
         await self.client.start_notify(
-            NOTIFY_CHAR_UUID, self.notification_handler,
+            NOTIFY_CHAR_UUID,
+            self.notification_handler,
         )
 
     def notification_handler(self, sender: str, data: bytearray):
         """This callback is used to receive the data read from the device (chunks) and attempt to rebuild the message.
-        
+
         Args:
             sender (str) : Client ID
             data (bytearray): Data to be rebuilt
         """
         self.transport.rebuild_chunk(data)
-       
-    def cmd_id_to_bytes(self,cmd_id:int):
-        return bytearray([0x00]) + cmd_id.to_bytes(2,"big")
-    def bytes_to_cmd_id(self,data:bytes):
-        return int.from_bytes(data[2:4],"big")
 
-    async def send(self,cmd_id:int,data:bytearray):
+    def cmd_id_to_bytes(self, cmd_id: int):
+        return bytearray([0x00]) + cmd_id.to_bytes(2, "big")
 
+    def bytes_to_cmd_id(self, data: bytes):
+        return int.from_bytes(data[2:4], "big")
+
+    async def send(self, cmd_id: int, data: bytearray):
         """This method is used to send data to the device.
         The `transport` is used to split the data into chunks as required by the communication protocol and these chunks are sent in order to the device.
-        
+
         Args:
             cmd_id (str) : Command ID to be sent
             data (bytearray): Data to be sent
@@ -210,7 +212,7 @@ class Connection(TransportDelegate):
         """
 
         cmd_response = asyncio.get_event_loop().create_future()
-        if not cmd_id in self.requests:
+        if cmd_id not in self.requests:
             self.requests[cmd_id] = []
 
         self.requests[cmd_id].append(cmd_response)
@@ -218,82 +220,89 @@ class Connection(TransportDelegate):
         if self.connection_status is not ConnectionStatus.CONNECTED:
             cmd_response.cancel()
             return cmd_response
-    
+
         # length, 0x00, cmdid, payload
         payload = bytearray([0x00]) + self.cmd_id_to_bytes(cmd_id) + data
 
         payload[0] = len(payload)
 
         logger.debug(f"Sending cmd payload: {bytes(payload).hex()}")
-       
+
         chunks = self.transport.split_in_chunks(payload)
         sent = 0
-        
+
         self.current_cmd_id = cmd_id
-        for chunknum,chunk in enumerate(chunks):
-            for i in range(0,SEND_MAX_TRIES):
+        for chunknum, chunk in enumerate(chunks):
+            for i in range(0, SEND_MAX_TRIES):
                 try:
                     if self.connection_status is not ConnectionStatus.CONNECTED:
                         cmd_response.cancel()
                         return cmd_response
-                   
-                    await self.client.write_gatt_char(WRITE_CHAR_UUID,chunk)
-                    logger.debug(F"CMD {cmd_id}. Chunk #{chunknum+1}/{len(chunks)} sent with size {len(chunk)} bytes")
+
+                    await self.client.write_gatt_char(WRITE_CHAR_UUID, chunk)
+                    logger.debug(
+                        f"CMD {cmd_id}. Chunk #{chunknum + 1}/{len(chunks)} sent with size {len(chunk)} bytes"
+                    )
                     sent += 1
                     break
                 except CancelledError as e:
-                    logger.debug(F"Send command failed. Retrying ({i}/{SEND_MAX_TRIES}) for chunk #{chunknum} : {str(e)}", exc_info = e)
-                    await asyncio.sleep(1)      
+                    logger.debug(
+                        f"Send command failed. Retrying ({i}/{SEND_MAX_TRIES}) for chunk #{chunknum} : {str(e)}",
+                        exc_info=e,
+                    )
+                    await asyncio.sleep(1)
                 except Exception as e:
-                    logger.debug(F"Send command failed. Retrying ({i}/{SEND_MAX_TRIES}) for chunk #{chunknum} : {str(e)}")
-                    await asyncio.sleep(1)    
+                    logger.debug(
+                        f"Send command failed. Retrying ({i}/{SEND_MAX_TRIES}) for chunk #{chunknum} : {str(e)}"
+                    )
+                    await asyncio.sleep(1)
 
         if sent != len(chunks) and self.connection_status == ConnectionStatus.CONNECTED:
             raise ConnectionException("Command chunks could not be sent")
 
         return cmd_response
 
-    def response_rebuilt(self,data:bytearray):
-        """This callback is used to receive messages rebuilt by the transport. 
+    def response_rebuilt(self, data: bytearray):
+        """This callback is used to receive messages rebuilt by the transport.
 
         The messages are used to resolve the future used when the command was sent.
 
         See base class `TransportDelegate`."""
 
-        if len(data)<=4:
+        if len(data) <= 4:
             return
 
         cmd_id = self.bytes_to_cmd_id(data)
 
-        if not cmd_id in self.requests:
+        if cmd_id not in self.requests:
             return
-        if len(self.requests[cmd_id])>0:
+        if len(self.requests[cmd_id]) > 0:
             req = self.requests[cmd_id].pop(0)
             if req.done():
                 return
             req.set_result(data)
 
-    def response_failed(self,data:bytearray):
+    def response_failed(self, data: bytearray):
         """This callback is used to cancel the future used when the command was sent.
 
         See base class `TransportDelegate`."""
-        
-        if len(data)<=4:
+
+        if len(data) <= 4:
             return
 
         cmd_id = self.bytes_to_cmd_id(data)
 
-        if not cmd_id in self.requests:
+        if cmd_id not in self.requests:
             return
 
-        if len(self.requests[cmd_id])>0:
+        if len(self.requests[cmd_id]) > 0:
             req = self.requests[cmd_id].pop(0)
             if req.done():
                 return
             req.cancel()
-     
-    async def read_info(self) -> Dict[str,str]:
-        """This method is used to retrieve the information stored in the Bluetooth Services available in the device. 
+
+    async def read_info(self) -> Dict[str, str]:
+        """This method is used to retrieve the information stored in the Bluetooth Services available in the device.
 
         This information is related to the Software Version, Hardware Version, Model Number and others.
 
@@ -302,45 +311,47 @@ class Connection(TransportDelegate):
         """
         try:
             if self.last_info:
-                 return self.last_info
-            
-            if self.connection_status is not  ConnectionStatus.CONNECTED:
+                return self.last_info
+
+            if self.connection_status is not ConnectionStatus.CONNECTED:
                 return {}
 
             values = {}
 
             for service in self.client.services:
-                logger.debug("[Service] {0}: {1}".format(service.uuid, service.description))
+                logger.debug(
+                    "[Service] {0}: {1}".format(service.uuid, service.description)
+                )
                 for char in service.characteristics:
                     if "read" in char.properties:
                         try:
                             raw = await self.client.read_gatt_char(char.uuid)
                             value = None
-                            
+
                             try:
-                                if char.description.endswith(" ID"): 
-                                    value = raw.hex().replace("fe","-").replace("ff","")
+                                if char.description.endswith(" ID"):
+                                    value = (
+                                        raw.hex().replace("fe", "-").replace("ff", "")
+                                    )
                                 else:
                                     value = raw.decode()
-                            except:
+                            except Exception:
                                 value = str(raw)
                             values[char.description] = value
                             logger.debug(
                                 "\t[Characteristic] {0}: (Handle: {1}) ({2}) | Name: {3}, Value: {4} ".format(
-                                char.uuid,
-                                char.handle,
-                                ",".join(char.properties),
-                                char.description,
-                                value,
+                                    char.uuid,
+                                    char.handle,
+                                    ",".join(char.properties),
+                                    char.description,
+                                    value,
+                                )
                             )
-                        )
                         except Exception as e:
                             logger.error(e)
-
 
             self.last_info = values
             return self.last_info
         except Exception as e:
             logger.error(e)
             raise e
-
