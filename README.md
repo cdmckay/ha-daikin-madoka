@@ -60,3 +60,11 @@ uv run pytest -q
 
 `tests/test_vendored.py` is a hardware-free regression guard that fails if the
 self-scanning code ever returns.
+
+## Acknowledgments
+
+The BLE protocol library vendored under `custom_components/daikin_madoka/madoka/`
+is derived from [**pymadoka**](https://github.com/dasimon135/pymadoka) and the
+original `daikin_madoka` integration by **Manuel Durán** (MIT). This project
+adapts and maintains that work for Home Assistant's Bluetooth stack. See
+[`LICENSE`](LICENSE).

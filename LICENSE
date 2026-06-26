@@ -1,6 +1,12 @@
 MIT License
 
 Copyright (c) 2021 Manuel Durán
+Copyright (c) 2026 Cameron McKay
+
+The protocol library vendored under custom_components/daikin_madoka/madoka/ is
+derived from pymadoka (https://github.com/dasimon135/pymadoka) and the original
+daikin_madoka integration by Manuel Durán; the 2021 notice above covers that
+work. The 2026 notice covers the integration and modifications in this repo.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
