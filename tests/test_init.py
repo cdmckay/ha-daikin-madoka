@@ -9,7 +9,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.daikin_madoka.const import DOMAIN, UNIQUE_ID
 from custom_components.daikin_madoka.madoka import ConnectionStatus
 
-ADDRESS = "68:88:A1:0A:9C:24"
+ADDRESS = "AA:BB:CC:DD:EE:FF"
 
 
 def _make_controller():

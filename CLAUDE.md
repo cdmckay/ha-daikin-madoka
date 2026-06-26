@@ -52,9 +52,9 @@ uv run pytest -q
   requirements; the bluetooth/usb component deps are listed in the `dev`
   dependency group so the import chain resolves.
 
-## Deployment
+## Verifying a change
 
-Runs on the NixOS host **banana** via the flake at `/etc/nixos`. The component is
-pinned by `rev` + `hash` in `hosts/banana/pkgs/daikin_madoka/default.nix`. After
-pushing here, bump that rev/hash, then `nixos-rebuild test` (never `switch`
-first) → verify the climate entity polls cleanly and turn-off works → `switch`.
+Before tagging a release, verify on a real Home Assistant instance (the
+integration can't be fully exercised without a BRC1H in range): the climate
+entity should poll cleanly with no `org.bluez InProgress` / "took longer than
+the scheduled update interval" log spam, and turn-off should reach the unit.

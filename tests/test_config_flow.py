@@ -6,7 +6,7 @@ from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.daikin_madoka.const import DOMAIN
 
-ADDRESS = "68:88:A1:0A:9C:24"
+ADDRESS = "AA:BB:CC:DD:EE:FF"
 
 
 async def test_user_flow_creates_entry(hass, enable_bluetooth):
@@ -17,7 +17,7 @@ async def test_user_flow_creates_entry(hass, enable_bluetooth):
     assert result["type"] is FlowResultType.FORM
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_DEVICES: "68:88:a1:0a:9c:24"}
+        result["flow_id"], {CONF_DEVICES: "aa:bb:cc:dd:ee:ff"}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_DEVICES] == [ADDRESS]
