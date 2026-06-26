@@ -1,4 +1,5 @@
 """Test the Daikin Madoka config flow."""
+
 from homeassistant import config_entries
 from homeassistant.const import CONF_DEVICES
 from homeassistant.data_entry_flow import FlowResultType

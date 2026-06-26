@@ -1,4 +1,5 @@
 """Test setup/teardown of the Daikin Madoka integration."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.config_entries import ConfigEntryState
@@ -41,11 +42,12 @@ async def test_setup_entry_uses_ha_scanner(hass, enable_bluetooth):
     entry.add_to_hass(hass)
 
     controller = _make_controller()
-    with patch(
-        "custom_components.daikin_madoka.bluetooth.async_ble_device_from_address",
-        return_value=MagicMock(name="BLEDevice"),
-    ) as mock_get_device, patch(
-        "custom_components.daikin_madoka.Controller", return_value=controller
+    with (
+        patch(
+            "custom_components.daikin_madoka.bluetooth.async_ble_device_from_address",
+            return_value=MagicMock(name="BLEDevice"),
+        ) as mock_get_device,
+        patch("custom_components.daikin_madoka.Controller", return_value=controller),
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()

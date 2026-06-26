@@ -5,6 +5,7 @@ collided with Home Assistant's central scanner on the same adapter and wedged
 the link with org.bluez `InProgress` errors (the original bug). These checks
 need no Home Assistant runtime and no hardware.
 """
+
 import inspect
 from pathlib import Path
 

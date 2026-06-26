@@ -1,4 +1,5 @@
 """Shared fixtures for the Daikin Madoka test suite."""
+
 import sys
 from pathlib import Path
 
