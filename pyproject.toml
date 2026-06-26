@@ -1,3 +1,34 @@
+[project]
+name = "ha-daikin-madoka"
+version = "3.0.0"
+description = "Home Assistant integration for Daikin BRC1H (Madoka) BLE thermostats"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest-homeassistant-custom-component",
+    "ruff",
+    # Requirements of the HA components our import chain loads (bluetooth ->
+    # bluetooth_adapters -> usb). pytest-homeassistant-custom-component installs
+    # HA core but not per-integration requirements, so we list them explicitly.
+    "aiousbwatcher",
+    "bleak",
+    "bleak-retry-connector",
+    "bluetooth-adapters",
+    "bluetooth-auto-recovery",
+    "bluetooth-data-tools",
+    "dbus-fast",
+    "habluetooth",
+    "pyserial",
+    "usb-devices",
+]
+
+[tool.uv]
+# This repo is a Home Assistant custom_components tree, not an installable
+# package — don't try to build it, just manage the dev environment.
+package = false
+
 [tool.ruff]
 target-version = "py313"
 line-length = 88

@@ -37,10 +37,13 @@ the BRC1H's Bluetooth MAC address. Pair the device with the host first
 
 ## Development
 
+This repo uses [uv](https://docs.astral.sh/uv/):
+
 ```bash
-pip install -r requirements_test.txt
-ruff check custom_components
-pytest -q
+uv sync                                   # create the dev env
+uv run ruff format --check custom_components
+uv run ruff check custom_components
+uv run pytest -q
 ```
 
 `tests/test_vendored.py` is a hardware-free regression guard that fails if the

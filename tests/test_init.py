@@ -33,7 +33,7 @@ def _make_controller():
     return controller
 
 
-async def test_setup_entry_uses_ha_scanner(hass):
+async def test_setup_entry_uses_ha_scanner(hass, enable_bluetooth):
     """Setup resolves the device via HA's scanner and loads the entry."""
     entry = MockConfigEntry(
         domain=DOMAIN, unique_id=UNIQUE_ID, data={CONF_DEVICES: [ADDRESS]}
@@ -54,7 +54,7 @@ async def test_setup_entry_uses_ha_scanner(hass):
     assert entry.state is ConfigEntryState.LOADED
 
 
-async def test_setup_retries_when_device_not_seen(hass):
+async def test_setup_retries_when_device_not_seen(hass, enable_bluetooth):
     """If HA has not seen the device advertise, setup is retried (not failed)."""
     entry = MockConfigEntry(
         domain=DOMAIN, unique_id=UNIQUE_ID, data={CONF_DEVICES: [ADDRESS]}

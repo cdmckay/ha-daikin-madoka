@@ -8,7 +8,7 @@ from custom_components.daikin_madoka.const import DOMAIN
 ADDRESS = "68:88:A1:0A:9C:24"
 
 
-async def test_user_flow_creates_entry(hass):
+async def test_user_flow_creates_entry(hass, enable_bluetooth):
     """A valid MAC creates a config entry with an upper-cased address list."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -22,7 +22,7 @@ async def test_user_flow_creates_entry(hass):
     assert result["data"][CONF_DEVICES] == [ADDRESS]
 
 
-async def test_user_flow_rejects_bad_mac(hass):
+async def test_user_flow_rejects_bad_mac(hass, enable_bluetooth):
     """An invalid MAC re-shows the form with an error."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
