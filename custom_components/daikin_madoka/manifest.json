@@ -1,0 +1,13 @@
+{
+  "domain": "daikin_madoka",
+  "name": "Daikin Madoka",
+  "codeowners": ["@cdmckay"],
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
+  "documentation": "https://github.com/cdmckay/ha-daikin-madoka",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/cdmckay/ha-daikin-madoka/issues",
+  "requirements": ["bleak-retry-connector>=4.4.0", "bluetooth-data-tools>=1.28.0"],
+  "version": "3.0.0"
+}

@@ -1,0 +1,16 @@
+{
+  "config": {
+    "error": {
+      "not_a_mac": "Wrong MAC address format (11:22:33:44:55:66)"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "devices": "Comma-separated list of BRC1H Bluetooth MAC addresses"
+        },
+        "description": "Enter the Bluetooth MAC address(es) of your BRC1H thermostat(s). Pair each device with this machine first (for example `bluetoothctl pair <MAC>`).",
+        "title": "Configure Daikin Madoka"
+      }
+    }
+  }
+}
